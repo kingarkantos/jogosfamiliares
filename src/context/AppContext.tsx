@@ -14,6 +14,23 @@ import {
   saveStoredSettings,
   saveStoredTournaments
 } from '../utils/storage';
+import {
+  deleteGameSupabase,
+  deleteMatchSupabase,
+  deletePlayerSupabase,
+  deleteTournamentSupabase,
+  fetchGamesSupabase,
+  fetchMatchesSupabase,
+  fetchPlayersSupabase,
+  fetchSettingsSupabase,
+  fetchTournamentsSupabase,
+  insertMatchSupabase,
+  testSupabaseConnection,
+  upsertGameSupabase,
+  upsertPlayerSupabase,
+  upsertSettingsSupabase,
+  upsertTournamentSupabase
+} from '../utils/supabase';
 import { sounds } from '../utils/audio';
 import { getMonthKey, getWeekKey } from '../utils/dateHelpers';
 
@@ -38,7 +55,10 @@ interface AppContextType {
   tournaments: Tournament[];
   settings: AppSettings;
   activeTab: NavTab;
+  isCloudSyncing: boolean;
+  isCloudConnected: boolean;
   setActiveTab: (tab: NavTab) => void;
+  syncWithCloud: () => Promise<void>;
   // Player Actions
   addPlayer: (player: Omit<Player, 'id' | 'createdAt'>) => void;
   updatePlayer: (player: Player) => void;
@@ -86,6 +106,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [tournaments, setTournaments] = useState<Tournament[]>(loadStoredTournaments);
   const [settings, setSettings] = useState<AppSettings>(loadStoredSettings);
   const [activeTab, setActiveTabState] = useState<NavTab>(getInitialTab);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [isCloudConnected, setIsCloudConnected] = useState(false);
 
   const setActiveTab = (tab: NavTab) => {
     setActiveTabState(tab);
@@ -110,6 +132,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     sounds.setEnabled(settings.soundEnabled);
   }, [settings.soundEnabled]);
+
+  // Initial cloud sync
+  const syncWithCloud = async () => {
+    setIsCloudSyncing(true);
+    try {
+      const isConnected = await testSupabaseConnection();
+      setIsCloudConnected(isConnected);
+      if (isConnected) {
+        const [cloudPlayers, cloudGames, cloudMatches, cloudTournaments, cloudSettings] = await Promise.all([
+          fetchPlayersSupabase(),
+          fetchGamesSupabase(),
+          fetchMatchesSupabase(),
+          fetchTournamentsSupabase(),
+          fetchSettingsSupabase()
+        ]);
+
+        if (cloudPlayers && cloudPlayers.length > 0) {
+          setPlayers(cloudPlayers);
+          saveStoredPlayers(cloudPlayers);
+        } else {
+          // Push local to Supabase
+          for (const p of players) await upsertPlayerSupabase(p);
+        }
+
+        if (cloudGames && cloudGames.length > 0) {
+          setGames(cloudGames);
+          saveStoredGames(cloudGames);
+        } else {
+          for (const g of games) await upsertGameSupabase(g);
+        }
+
+        if (cloudMatches && cloudMatches.length > 0) {
+          setMatches(cloudMatches);
+          saveStoredMatches(cloudMatches);
+        } else {
+          for (const m of matches) await insertMatchSupabase(m);
+        }
+
+        if (cloudTournaments && cloudTournaments.length > 0) {
+          setTournaments(cloudTournaments);
+          saveStoredTournaments(cloudTournaments);
+        } else {
+          for (const t of tournaments) await upsertTournamentSupabase(t);
+        }
+
+        if (cloudSettings) {
+          setSettings(cloudSettings);
+          saveStoredSettings(cloudSettings);
+        } else {
+          await upsertSettingsSupabase(settings);
+        }
+      }
+    } catch (e) {
+      console.warn('Cloud sync note:', e);
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  useEffect(() => {
+    syncWithCloud();
+  }, []);
 
   const reloadFromStorage = () => {
     setPlayers(loadStoredPlayers());
@@ -166,6 +250,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = [...players, newPlayer];
     setPlayers(updated);
     saveStoredPlayers(updated);
+    upsertPlayerSupabase(newPlayer);
     sounds.playSuccess();
   };
 
@@ -173,6 +258,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = players.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p));
     setPlayers(updated);
     saveStoredPlayers(updated);
+    upsertPlayerSupabase(updatedPlayer);
     sounds.playClick();
   };
 
@@ -180,6 +266,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = players.filter(p => p.id !== playerId);
     setPlayers(updated);
     saveStoredPlayers(updated);
+    deletePlayerSupabase(playerId);
     sounds.playClick();
   };
 
@@ -193,6 +280,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = [...games, newGame];
     setGames(updated);
     saveStoredGames(updated);
+    upsertGameSupabase(newGame);
     sounds.playSuccess();
   };
 
@@ -200,6 +288,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = games.map(g => (g.id === updatedGame.id ? updatedGame : g));
     setGames(updated);
     saveStoredGames(updated);
+    upsertGameSupabase(updatedGame);
     sounds.playClick();
   };
 
@@ -207,6 +296,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = games.filter(g => g.id !== gameId);
     setGames(updated);
     saveStoredGames(updated);
+    deleteGameSupabase(gameId);
     sounds.playClick();
   };
 
@@ -219,11 +309,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedMatches = [newMatch, ...matches];
     setMatches(updatedMatches);
     saveStoredMatches(updatedMatches);
+    insertMatchSupabase(newMatch);
 
-    // Update game timesPlayed
     const updatedGames = games.map(g => {
       if (g.id === matchData.gameId) {
-        return { ...g, timesPlayed: (g.timesPlayed || 0) + 1 };
+        const uG = { ...g, timesPlayed: (g.timesPlayed || 0) + 1 };
+        upsertGameSupabase(uG);
+        return uG;
       }
       return g;
     });
@@ -238,11 +330,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedMatches = matches.filter(m => m.id !== matchId);
     setMatches(updatedMatches);
     saveStoredMatches(updatedMatches);
+    deleteMatchSupabase(matchId);
 
     if (matchToDelete) {
       const updatedGames = games.map(g => {
         if (g.id === matchToDelete.gameId) {
-          return { ...g, timesPlayed: Math.max(0, (g.timesPlayed || 0) - 1) };
+          const uG = { ...g, timesPlayed: Math.max(0, (g.timesPlayed || 0) - 1) };
+          upsertGameSupabase(uG);
+          return uG;
         }
         return g;
       });
@@ -257,6 +352,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = [tournament, ...tournaments];
     setTournaments(updated);
     saveStoredTournaments(updated);
+    upsertTournamentSupabase(tournament);
     sounds.playSuccess();
   };
 
@@ -264,6 +360,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = tournaments.map(t => (t.id === updatedTournament.id ? updatedTournament : t));
     setTournaments(updated);
     saveStoredTournaments(updated);
+    upsertTournamentSupabase(updatedTournament);
     if (updatedTournament.status === 'completed') {
       triggerConfetti();
     } else {
@@ -275,6 +372,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = tournaments.filter(t => t.id !== tournamentId);
     setTournaments(updated);
     saveStoredTournaments(updated);
+    deleteTournamentSupabase(tournamentId);
     sounds.playClick();
   };
 
@@ -283,12 +381,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
     saveStoredSettings(updated);
+    upsertSettingsSupabase(updated);
     sounds.playClick();
   };
 
   const resetAllData = () => {
     resetAllDataToDefault();
     reloadFromStorage();
+    syncWithCloud();
     sounds.playSuccess();
   };
 
@@ -477,7 +577,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         tournaments,
         settings,
         activeTab,
+        isCloudSyncing,
+        isCloudConnected,
         setActiveTab,
+        syncWithCloud,
         addPlayer,
         updatePlayer,
         deletePlayer,

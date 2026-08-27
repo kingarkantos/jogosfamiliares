@@ -11,7 +11,8 @@ import {
   Clock,
   Sparkles,
   Layers,
-  Calculator
+  Calculator,
+  Cloud
 } from 'lucide-react';
 import { NavTab, useApp } from '../context/AppContext';
 import { getCountdownToNextThursday } from '../utils/dateHelpers';
@@ -22,7 +23,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenRecordModal, onOpenSettingsModal }) => {
-  const { activeTab, setActiveTab, settings, updateSettings } = useApp();
+  const { activeTab, setActiveTab, settings, updateSettings, isCloudConnected, isCloudSyncing, syncWithCloud } = useApp();
   const countdown = getCountdownToNextThursday();
 
   const navItems: { id: NavTab; label: string; icon: React.ReactNode }[] = [
@@ -92,6 +93,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenRecordModal, onOpenSetting
               <PlusCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Lançar Partida</span>
               <span className="sm:hidden">Partida</span>
+            </button>
+
+            {/* Cloud Sync Status Indicator */}
+            <button
+              onClick={() => syncWithCloud()}
+              disabled={isCloudSyncing}
+              title={isCloudConnected ? 'Conectado ao Supabase (Sincronizar)' : 'Conectando ao Supabase...'}
+              className={`p-2.5 rounded-2xl border transition-all ${
+                isCloudConnected
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+                  : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white'
+              }`}
+            >
+              <Cloud className={`w-5 h-5 ${isCloudSyncing ? 'animate-spin text-brand-400' : ''}`} />
             </button>
 
             {/* Sound Toggle */}
