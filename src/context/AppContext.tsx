@@ -227,6 +227,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       fifthPlus: 2,
       participation: 1
     };
+    if (rank <= 0) return 0;
     switch (rank) {
       case 1:
         return rules.first;
@@ -237,7 +238,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       case 4:
         return rules.fourth;
       default:
-        return rank > 4 ? rules.fifthPlus : rules.participation;
+        // rank >= 5
+        return rules.fifthPlus ?? rules.participation ?? 1;
     }
   };
 
@@ -555,10 +557,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let filteredMatches = [...matches];
 
     if (scope === 'week') {
-      const targetWeek = filterKey || (matches.length > 0 ? getWeekKey(matches[0].date) : getWeekKey(new Date().toISOString()));
+      // Default to the current week (not the most recent match's week which could be in the past)
+      const targetWeek = filterKey || getWeekKey(new Date().toISOString());
       filteredMatches = filteredMatches.filter(m => getWeekKey(m.date) === targetWeek);
     } else if (scope === 'month') {
-      const targetMonth = filterKey || (matches.length > 0 ? getMonthKey(matches[0].date) : getMonthKey(new Date().toISOString()));
+      // Default to the current month
+      const targetMonth = filterKey || getMonthKey(new Date().toISOString());
       filteredMatches = filteredMatches.filter(m => getMonthKey(m.date) === targetMonth);
     }
 
@@ -596,15 +600,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .sort((a, b) => {
         if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
         if (b.wins !== a.wins) return b.wins - a.wins;
-        return b.podiums - a.podiums;
+        if (b.podiums !== a.podiums) return b.podiums - a.podiums;
+        return b.averageScore - a.averageScore;
       });
 
-    let currentRank = 1;
+    // Assign ranks correctly, handling ties:
+    // Two players with identical tiebreaker values share the same rank.
+    // The next distinct player gets rank = their index + 1 (Olympic-style ranking).
     entries.forEach((entry, idx) => {
-      if (idx > 0 && entry.totalPoints < entries[idx - 1].totalPoints) {
-        currentRank = idx + 1;
+      if (idx === 0) {
+        entry.rank = 1;
+      } else {
+        const prev = entries[idx - 1];
+        const isTied =
+          entry.totalPoints === prev.totalPoints &&
+          entry.wins === prev.wins &&
+          entry.podiums === prev.podiums &&
+          entry.averageScore === prev.averageScore;
+        entry.rank = isTied ? prev.rank : idx + 1;
       }
-      entry.rank = currentRank;
     });
 
     return entries;

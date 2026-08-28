@@ -52,7 +52,7 @@ export const LiveGameCounter: React.FC<LiveGameCounterProps> = ({ onFinishMatch 
     sounds.playClick();
     setScores(prev => ({
       ...prev,
-      [playerId]: Math.max(0, (prev[playerId] || 0) + delta)
+      [playerId]: (prev[playerId] || 0) + delta
     }));
   };
 
