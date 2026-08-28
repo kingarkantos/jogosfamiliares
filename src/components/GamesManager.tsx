@@ -141,81 +141,100 @@ export const GamesManager: React.FC = () => {
       </div>
 
       {/* Games Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {games.map(game => (
-          <div
-            key={game.id}
-            className="glass-panel glass-panel-hover rounded-3xl p-6 flex flex-col justify-between relative group"
-          >
-            <div>
-              {/* Top Icons & Actions */}
-              <div className="flex items-start justify-between gap-3 mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-900 to-slate-800 border border-white/10 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
-                  {game.icon}
+      {games.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {games.map(game => (
+            <div
+              key={game.id}
+              className="glass-panel glass-panel-hover rounded-3xl p-6 flex flex-col justify-between relative group"
+            >
+              <div>
+                {/* Top Icons & Actions */}
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-900 to-slate-800 border border-white/10 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
+                    {game.icon}
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => openEditModal(game)}
+                      className="p-2 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-brand-300 transition-colors"
+                      title="Editar Jogo"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGame(game)}
+                      className="p-2 rounded-xl bg-slate-900/60 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                      title="Excluir Jogo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => openEditModal(game)}
-                    className="p-2 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-brand-300 transition-colors"
-                    title="Editar Jogo"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteGame(game)}
-                    className="p-2 rounded-xl bg-slate-900/60 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
-                    title="Excluir Jogo"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                {/* Title & Category */}
+                <div className="mb-3">
+                  <h3 className="font-display font-black text-lg text-white group-hover:text-brand-300 transition-colors">
+                    {game.name}
+                  </h3>
+                  <span className="text-xs font-semibold text-slate-400 block mt-0.5">
+                    {game.category}
+                  </span>
+                </div>
+
+                {/* Description */}
+                {game.description && (
+                  <p className="text-xs text-slate-400 line-clamp-2 mb-4">
+                    {game.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Badges and Details */}
+              <div className="space-y-3 pt-3 border-t border-white/5">
+                <div className="flex items-center justify-between text-xs text-slate-300">
+                  <span className="flex items-center gap-1.5 text-slate-400">
+                    <Users className="w-3.5 h-3.5 text-brand-400" />
+                    {game.minPlayers} - {game.maxPlayers} Jogadores
+                  </span>
+                  <span className="flex items-center gap-1.5 text-slate-400">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    ~{game.durationMinutes} min
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border ${getComplexityBadge(game.complexity)}`}>
+                    {game.complexity}
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-400">
+                    {game.timesPlayed} {game.timesPlayed === 1 ? 'partida' : 'partidas'}
+                  </span>
                 </div>
               </div>
 
-              {/* Title & Category */}
-              <div className="mb-3">
-                <h3 className="font-display font-black text-lg text-white group-hover:text-brand-300 transition-colors">
-                  {game.name}
-                </h3>
-                <span className="text-xs font-semibold text-slate-400 block mt-0.5">
-                  {game.category}
-                </span>
-              </div>
-
-              {/* Description */}
-              {game.description && (
-                <p className="text-xs text-slate-400 line-clamp-2 mb-4">
-                  {game.description}
-                </p>
-              )}
             </div>
-
-            {/* Badges and Details */}
-            <div className="space-y-3 pt-3 border-t border-white/5">
-              <div className="flex items-center justify-between text-xs text-slate-300">
-                <span className="flex items-center gap-1.5 text-slate-400">
-                  <Users className="w-3.5 h-3.5 text-brand-400" />
-                  {game.minPlayers} - {game.maxPlayers} Jogadores
-                </span>
-                <span className="flex items-center gap-1.5 text-slate-400">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  ~{game.durationMinutes} min
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 pt-1">
-                <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border ${getComplexityBadge(game.complexity)}`}>
-                  {game.complexity}
-                </span>
-                <span className="text-[11px] font-semibold text-slate-400">
-                  {game.timesPlayed} {game.timesPlayed === 1 ? 'partida' : 'partidas'}
-                </span>
-              </div>
-            </div>
-
+          ))}
+        </div>
+      ) : (
+        <div className="glass-panel p-12 rounded-3xl text-center space-y-4 max-w-xl mx-auto border border-white/10">
+          <div className="w-16 h-16 rounded-3xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-3xl mx-auto shadow-inner">
+            🎲
           </div>
-        ))}
-      </div>
+          <h3 className="font-display font-black text-xl text-white">Nenhum jogo cadastrado ainda</h3>
+          <p className="text-xs sm:text-sm text-slate-400">
+            Cadastre os jogos de tabuleiro e cartas da família para começar a registrar as partidas!
+          </p>
+          <button
+            onClick={openAddModal}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-brand-600/30 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Cadastrar Primeiro Jogo
+          </button>
+        </div>
+      )}
 
       {/* Add / Edit Game Modal */}
       {isGameModalOpen && (

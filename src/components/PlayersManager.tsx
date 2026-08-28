@@ -117,138 +117,156 @@ export const PlayersManager: React.FC = () => {
       </div>
 
       {/* Players Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {players.map(player => {
-          const stats = getPlayerStats(player.id);
-          const favoriteGame = games.find(g => g.id === stats.favoriteGameId);
-          const winRate = stats.totalMatches > 0 ? Math.round((stats.wins / stats.totalMatches) * 100) : 0;
+      {players.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {players.map(player => {
+            const stats = getPlayerStats(player.id);
+            const favoriteGame = games.find(g => g.id === stats.favoriteGameId);
+            const winRate = stats.totalMatches > 0 ? Math.round((stats.wins / stats.totalMatches) * 100) : 0;
 
-          return (
-            <div
-              key={player.id}
-              className="glass-panel glass-panel-hover rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group"
-              style={{
-                borderColor: player.themeColor ? `${player.themeColor}33` : 'rgba(255,255,255,0.08)'
-              }}
-            >
-              {/* Background Glow based on Player Theme */}
+            return (
               <div
-                className="absolute -top-16 -right-16 w-36 h-36 rounded-full blur-3xl opacity-20 pointer-events-none transition-opacity group-hover:opacity-35"
-                style={{ backgroundColor: player.themeColor || '#8b5cf6' }}
-              />
+                key={player.id}
+                className="glass-panel glass-panel-hover rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between group"
+                style={{
+                  borderColor: player.themeColor ? `${player.themeColor}33` : 'rgba(255,255,255,0.08)'
+                }}
+              >
+                {/* Background Glow based on Player Theme */}
+                <div
+                  className="absolute -top-16 -right-16 w-36 h-36 rounded-full blur-3xl opacity-20 pointer-events-none transition-opacity group-hover:opacity-35"
+                  style={{ backgroundColor: player.themeColor || '#8b5cf6' }}
+                />
 
-              {/* Card Header: Avatar & Main Info */}
-              <div>
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  
-                  {/* 3D Avatar */}
-                  <div className="relative">
-                    <div
-                      className="w-20 h-20 rounded-3xl p-1.5 shadow-xl transition-transform group-hover:scale-105"
-                      style={{
-                        background: `linear-gradient(135deg, ${player.themeColor || '#8b5cf6'}, #312e81)`
-                      }}
-                    >
-                      <div className="w-full h-full rounded-2xl overflow-hidden bg-slate-900">
-                        <AvatarImage
-                          src={player.avatarUrl}
-                          alt={player.name}
-                          fallbackText={player.name}
-                          themeColor={player.themeColor}
-                        />
+                {/* Card Header: Avatar & Main Info */}
+                <div>
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    
+                    {/* 3D Avatar */}
+                    <div className="relative">
+                      <div
+                        className="w-20 h-20 rounded-3xl p-1.5 shadow-xl transition-transform group-hover:scale-105"
+                        style={{
+                          background: `linear-gradient(135deg, ${player.themeColor || '#8b5cf6'}, #312e81)`
+                        }}
+                      >
+                        <div className="w-full h-full rounded-2xl overflow-hidden bg-slate-900">
+                          <AvatarImage
+                            src={player.avatarUrl}
+                            alt={player.name}
+                            fallbackText={player.name}
+                            themeColor={player.themeColor}
+                          />
+                        </div>
                       </div>
+                      {stats.currentStreak >= 2 && (
+                        <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center gap-1 shadow-md">
+                          <Flame className="w-3 h-3 text-red-700 fill-red-700 animate-bounce-subtle" />
+                          {stats.currentStreak}x
+                        </div>
+                      )}
                     </div>
-                    {stats.currentStreak >= 2 && (
-                      <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center gap-1 shadow-md">
-                        <Flame className="w-3 h-3 text-red-700 fill-red-700 animate-bounce-subtle" />
-                        {stats.currentStreak}x
-                      </div>
-                    )}
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => openEditModal(player)}
+                        className="p-2 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                        title="Editar Jogador"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeletePlayer(player)}
+                        className="p-2 rounded-xl bg-slate-900/60 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                        title="Remover Jogador"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => openEditModal(player)}
-                      className="p-2 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-brand-300 transition-colors"
-                      title="Editar Jogador"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeletePlayer(player)}
-                      className="p-2 rounded-xl bg-slate-900/60 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
-                      title="Excluir Jogador"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  {/* Name & Nickname */}
+                  <div>
+                    <h3 className="font-display font-black text-xl text-white">
+                      {player.name}
+                    </h3>
+                    <p className="text-xs font-bold text-brand-300">
+                      "{player.nickname}"
+                    </p>
                   </div>
-                </div>
 
-                {/* Name & Nickname */}
-                <div className="mb-3">
-                  <h3 className="font-display font-black text-xl text-white group-hover:text-brand-300 transition-colors">
-                    {player.name}
-                  </h3>
-                  <p className="text-xs font-bold text-amber-400 flex items-center gap-1.5 mt-0.5">
-                    <Sparkles className="w-3 h-3" />
-                    "{player.nickname}"
-                  </p>
-                </div>
-
-                {/* Catchphrase */}
-                {player.phrase && (
-                  <div className="flex items-start gap-2 p-3 rounded-2xl bg-slate-900/50 border border-white/5 text-xs text-slate-300 italic mb-4">
-                    <Quote className="w-3.5 h-3.5 text-brand-400 shrink-0 mt-0.5" />
-                    <span>{player.phrase}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Stats Box */}
-              <div className="pt-4 border-t border-white/5 space-y-3">
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="p-2.5 rounded-2xl bg-slate-900/80 border border-white/5">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Pontos</span>
-                    <span className="text-base font-black text-amber-300">{stats.totalScore}</span>
-                  </div>
-                  <div className="p-2.5 rounded-2xl bg-slate-900/80 border border-white/5">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Vitórias</span>
-                    <span className="text-base font-black text-emerald-400">{stats.wins}</span>
-                  </div>
-                  <div className="p-2.5 rounded-2xl bg-slate-900/80 border border-white/5">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Aproveit.</span>
-                    <span className="text-base font-black text-brand-300">{winRate}%</span>
-                  </div>
-                </div>
-
-                {/* Trophies and Titles Badges */}
-                <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-                  <div className="flex items-center gap-2">
-                    {stats.weeklyTitles > 0 && (
-                      <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[11px] font-bold flex items-center gap-1" title="Títulos da Semana">
-                        <Trophy className="w-3 h-3" /> {stats.weeklyTitles} Semanas
-                      </span>
-                    )}
-                    {stats.monthlyTitles > 0 && (
-                      <span className="px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/20 text-[11px] font-bold flex items-center gap-1" title="Títulos do Mês">
-                        <Crown className="w-3 h-3" /> {stats.monthlyTitles} Meses
-                      </span>
-                    )}
-                  </div>
-                  {favoriteGame && (
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1 truncate max-w-[130px]" title={`Jogo Favorito: ${favoriteGame.name}`}>
-                      <span>{favoriteGame.icon}</span>
-                      <span className="truncate">{favoriteGame.name}</span>
-                    </span>
+                  {/* Catchphrase */}
+                  {player.phrase && (
+                    <p className="text-xs italic text-slate-400 mt-2 flex items-start gap-1">
+                      <Quote className="w-3 h-3 text-brand-400 shrink-0 mt-0.5" />
+                      <span>{player.phrase}</span>
+                    </p>
                   )}
                 </div>
-              </div>
 
-            </div>
-          );
-        })}
-      </div>
+                {/* Player Mini Stats */}
+                <div className="pt-4 mt-4 border-t border-white/5 space-y-3">
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2 rounded-2xl bg-slate-900/80 border border-white/5">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Pontos</span>
+                      <span className="text-sm font-black text-amber-300">{stats.totalScore}</span>
+                    </div>
+                    <div className="p-2 rounded-2xl bg-slate-900/80 border border-white/5">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Vitórias</span>
+                      <span className="text-sm font-black text-white">{stats.wins}</span>
+                    </div>
+                    <div className="p-2 rounded-2xl bg-slate-900/80 border border-white/5">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Partidas</span>
+                      <span className="text-sm font-black text-slate-300">{stats.totalMatches}</span>
+                    </div>
+                  </div>
+
+                  {/* Achievements badges */}
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center gap-1.5">
+                      {stats.weeklyTitles > 0 && (
+                        <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[11px] font-bold flex items-center gap-1" title="Títulos da Semana">
+                          <Trophy className="w-3 h-3" /> {stats.weeklyTitles} Semanas
+                        </span>
+                      )}
+                      {stats.monthlyTitles > 0 && (
+                        <span className="px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/20 text-[11px] font-bold flex items-center gap-1" title="Títulos do Mês">
+                          <Crown className="w-3 h-3" /> {stats.monthlyTitles} Meses
+                        </span>
+                      )}
+                    </div>
+                    {favoriteGame && (
+                      <span className="text-[11px] text-slate-400 flex items-center gap-1 truncate max-w-[130px]" title={`Jogo Favorito: ${favoriteGame.name}`}>
+                        <span>{favoriteGame.icon}</span>
+                        <span className="truncate">{favoriteGame.name}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="glass-panel p-12 rounded-3xl text-center space-y-4 max-w-xl mx-auto border border-white/10">
+          <div className="w-16 h-16 rounded-3xl bg-brand-500/20 text-brand-300 flex items-center justify-center text-3xl mx-auto shadow-inner">
+            👥
+          </div>
+          <h3 className="font-display font-black text-xl text-white">Nenhum jogador cadastrado ainda</h3>
+          <p className="text-xs sm:text-sm text-slate-400">
+            Comece cadastrando os membros da família com seus avatares personalizados para iniciar a liga!
+          </p>
+          <button
+            onClick={openAddModal}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-brand-600/30 transition-all"
+          >
+            <UserPlus className="w-4 h-4" />
+            Cadastrar Primeiro Jogador
+          </button>
+        </div>
+      )}
 
       {/* Add / Edit Player Modal */}
       {isPlayerModalOpen && (

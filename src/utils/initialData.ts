@@ -17,7 +17,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark'
 };
 
-export const INITIAL_PLAYERS: Player[] = [
+export const INITIAL_PLAYERS: Player[] = [];
+
+export const DEMO_PLAYERS: Player[] = [
   {
     id: 'player-1',
     name: 'Lucas (Pai)',
@@ -140,7 +142,9 @@ export const INITIAL_PLAYERS: Player[] = [
   }
 ];
 
-export const INITIAL_GAMES: Game[] = [
+export const INITIAL_GAMES: Game[] = [];
+
+export const DEMO_GAMES: Game[] = [
   {
     id: 'game-catan',
     name: 'Catan',

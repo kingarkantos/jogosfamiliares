@@ -158,33 +158,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           fetchSettingsSupabase()
         ]);
 
-        if (cloudPlayers && cloudPlayers.length > 0) {
+        if (cloudPlayers !== null) {
           setPlayers(cloudPlayers);
           saveStoredPlayers(cloudPlayers);
-        } else {
-          // Push local to Supabase
-          for (const p of players) await upsertPlayerSupabase(p);
         }
 
-        if (cloudGames && cloudGames.length > 0) {
+        if (cloudGames !== null) {
           setGames(cloudGames);
           saveStoredGames(cloudGames);
-        } else {
-          for (const g of games) await upsertGameSupabase(g);
         }
 
-        if (cloudMatches && cloudMatches.length > 0) {
+        if (cloudMatches !== null) {
           setMatches(cloudMatches);
           saveStoredMatches(cloudMatches);
-        } else {
-          for (const m of matches) await insertMatchSupabase(m);
         }
 
-        if (cloudTournaments && cloudTournaments.length > 0) {
+        if (cloudTournaments !== null) {
           setTournaments(cloudTournaments);
           saveStoredTournaments(cloudTournaments);
-        } else {
-          for (const t of tournaments) await upsertTournamentSupabase(t);
         }
 
         if (cloudSettings) {

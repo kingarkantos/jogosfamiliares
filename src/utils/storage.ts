@@ -1,13 +1,22 @@
 import { AppSettings, Game, Match, Player, Tournament } from '../types';
-import { DEFAULT_SETTINGS, DEMO_MATCHES, INITIAL_GAMES, INITIAL_MATCHES, INITIAL_PLAYERS } from './initialData';
+import { DEFAULT_SETTINGS, DEMO_GAMES, DEMO_MATCHES, DEMO_PLAYERS, INITIAL_GAMES, INITIAL_MATCHES, INITIAL_PLAYERS } from './initialData';
 
 const STORAGE_KEYS = {
-  PLAYERS: 'jogosfamiliares_players_v1',
-  GAMES: 'jogosfamiliares_games_v1',
-  MATCHES: 'jogosfamiliares_matches_v1',
-  TOURNAMENTS: 'jogosfamiliares_tournaments_v1',
-  SETTINGS: 'jogosfamiliares_settings_v1',
+  PLAYERS: 'jogosfamiliares_players_v2',
+  GAMES: 'jogosfamiliares_games_v2',
+  MATCHES: 'jogosfamiliares_matches_v2',
+  TOURNAMENTS: 'jogosfamiliares_tournaments_v2',
+  SETTINGS: 'jogosfamiliares_settings_v2',
 };
+
+// Clean legacy v1 keys if present
+try {
+  localStorage.removeItem('jogosfamiliares_players_v1');
+  localStorage.removeItem('jogosfamiliares_games_v1');
+  localStorage.removeItem('jogosfamiliares_matches_v1');
+  localStorage.removeItem('jogosfamiliares_tournaments_v1');
+  localStorage.removeItem('jogosfamiliares_settings_v1');
+} catch {}
 
 export interface BackupData {
   version: string;
@@ -193,8 +202,8 @@ export function resetAllDataToEmpty(): void {
 }
 
 export function loadDemoData(): void {
-  saveStoredPlayers(INITIAL_PLAYERS);
-  const demoGames = INITIAL_GAMES.map(g => {
+  saveStoredPlayers(DEMO_PLAYERS);
+  const demoGames = DEMO_GAMES.map(g => {
     const played = DEMO_MATCHES.filter(m => m.gameId === g.id).length;
     return { ...g, timesPlayed: played };
   });
