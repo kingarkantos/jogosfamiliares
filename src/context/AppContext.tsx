@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { AppSettings, Game, Match, MatchPlayerResult, Player, PlayerStats, Tournament } from '../types';
 import {
@@ -55,6 +55,18 @@ export interface LeaderboardEntry {
   averageScore: number;
 }
 
+export interface LiveCounterState {
+  selectedGameId: string;
+  tablePlayerIds: string[];
+  scores: { [playerId: string]: number };
+  round: number;
+  activeTurnPlayerIndex: number;
+  // Timer
+  timerDurationSeconds: number; // 0 = no timer selected
+  timerSecondsLeft: number;
+  timerRunning: boolean;
+}
+
 interface AppContextType {
   players: Player[];
   games: Game[];
@@ -95,6 +107,17 @@ interface AppContextType {
   getMonthlyChampion: (monthKey?: string) => LeaderboardEntry | null;
   calculateLeaguePoints: (rank: number) => number;
   triggerConfetti: () => void;
+  // Live Counter (persists across tab changes)
+  liveCounter: LiveCounterState;
+  setLiveCounterGame: (gameId: string) => void;
+  toggleLiveCounterPlayer: (playerId: string) => void;
+  updateLiveScore: (playerId: string, delta: number) => void;
+  resetLiveScores: () => void;
+  nextLiveTurn: () => void;
+  setLiveTimer: (durationSeconds: number) => void;
+  startLiveTimer: () => void;
+  pauseLiveTimer: () => void;
+  resetLiveTimer: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -119,6 +142,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const [isCloudConnected, setIsCloudConnected] = useState(false);
 
+  // ── Live Counter persistent state ──────────────────────────────────────────
+  const [liveCounter, setLiveCounter] = useState<LiveCounterState>({
+    selectedGameId: '',
+    tablePlayerIds: [],
+    scores: {},
+    round: 1,
+    activeTurnPlayerIndex: 0,
+    timerDurationSeconds: 0,
+    timerSecondsLeft: 0,
+    timerRunning: false,
+  });
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const setActiveTab = (tab: NavTab) => {
     setActiveTabState(tab);
     try {
@@ -142,6 +178,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     sounds.setEnabled(settings.soundEnabled);
   }, [settings.soundEnabled]);
+
+  // ── Global countdown timer (persists across tab changes) ──────────────────
+  useEffect(() => {
+    if (liveCounter.timerRunning) {
+      timerIntervalRef.current = setInterval(() => {
+        setLiveCounter(prev => {
+          if (prev.timerSecondsLeft <= 1) {
+            clearInterval(timerIntervalRef.current!);
+            timerIntervalRef.current = null;
+            try { sounds.playFanfare(); } catch {}
+            return { ...prev, timerSecondsLeft: 0, timerRunning: false };
+          }
+          return { ...prev, timerSecondsLeft: prev.timerSecondsLeft - 1 };
+        });
+      }, 1000);
+    } else {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    }
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveCounter.timerRunning]);
+
+  // Initialize counter table players when player list first loads
+  useEffect(() => {
+    if (players.length > 0 && liveCounter.tablePlayerIds.length === 0) {
+      const initScores: { [id: string]: number } = {};
+      players.slice(0, 4).forEach(p => { initScores[p.id] = 0; });
+      setLiveCounter(prev => ({
+        ...prev,
+        selectedGameId: prev.selectedGameId || (games[0]?.id ?? ''),
+        tablePlayerIds: players.slice(0, 4).map(p => p.id),
+        scores: initScores,
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [players.length]);
 
   // Initial cloud sync
   const syncWithCloud = async () => {
@@ -217,6 +296,93 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('Confetti error:', e);
     }
   };
+
+  // ── Live Counter actions ───────────────────────────────────────────────────
+  const setLiveCounterGame = useCallback((gameId: string) => {
+    setLiveCounter(prev => ({ ...prev, selectedGameId: gameId }));
+  }, []);
+
+  const toggleLiveCounterPlayer = useCallback((playerId: string) => {
+    setLiveCounter(prev => {
+      if (prev.tablePlayerIds.includes(playerId)) {
+        if (prev.tablePlayerIds.length <= 1) return prev;
+        return {
+          ...prev,
+          tablePlayerIds: prev.tablePlayerIds.filter(id => id !== playerId),
+          activeTurnPlayerIndex: 0,
+        };
+      }
+      return {
+        ...prev,
+        tablePlayerIds: [...prev.tablePlayerIds, playerId],
+        scores: { ...prev.scores, [playerId]: prev.scores[playerId] ?? 0 },
+      };
+    });
+  }, []);
+
+  const updateLiveScore = useCallback((playerId: string, delta: number) => {
+    sounds.playClick();
+    setLiveCounter(prev => ({
+      ...prev,
+      scores: { ...prev.scores, [playerId]: (prev.scores[playerId] || 0) + delta },
+    }));
+  }, []);
+
+  const resetLiveScores = useCallback(() => {
+    setLiveCounter(prev => {
+      const reset: { [id: string]: number } = {};
+      prev.tablePlayerIds.forEach(id => { reset[id] = 0; });
+      return { ...prev, scores: reset, round: 1, activeTurnPlayerIndex: 0 };
+    });
+    sounds.playClick();
+  }, []);
+
+  const nextLiveTurn = useCallback(() => {
+    sounds.playClick();
+    setLiveCounter(prev => {
+      const nextIdx = prev.activeTurnPlayerIndex + 1;
+      if (nextIdx >= prev.tablePlayerIds.length) {
+        return { ...prev, activeTurnPlayerIndex: 0, round: prev.round + 1 };
+      }
+      return { ...prev, activeTurnPlayerIndex: nextIdx };
+    });
+  }, []);
+
+  const setLiveTimer = useCallback((durationSeconds: number) => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setLiveCounter(prev => ({
+      ...prev,
+      timerDurationSeconds: durationSeconds,
+      timerSecondsLeft: durationSeconds,
+      timerRunning: false,
+    }));
+  }, []);
+
+  const startLiveTimer = useCallback(() => {
+    setLiveCounter(prev => {
+      if (prev.timerSecondsLeft <= 0) return prev;
+      return { ...prev, timerRunning: true };
+    });
+  }, []);
+
+  const pauseLiveTimer = useCallback(() => {
+    setLiveCounter(prev => ({ ...prev, timerRunning: false }));
+  }, []);
+
+  const resetLiveTimer = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setLiveCounter(prev => ({
+      ...prev,
+      timerSecondsLeft: prev.timerDurationSeconds,
+      timerRunning: false,
+    }));
+  }, []);
 
   const calculateLeaguePoints = (rank: number): number => {
     const rules = settings.pointRules || {
@@ -669,7 +835,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getWeeklyChampion,
         getMonthlyChampion,
         calculateLeaguePoints,
-        triggerConfetti
+        triggerConfetti,
+        // Live Counter
+        liveCounter,
+        setLiveCounterGame,
+        toggleLiveCounterPlayer,
+        updateLiveScore,
+        resetLiveScores,
+        nextLiveTurn,
+        setLiveTimer,
+        startLiveTimer,
+        pauseLiveTimer,
+        resetLiveTimer,
       }}
     >
       {children}

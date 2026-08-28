@@ -64,9 +64,10 @@ const AppContent: React.FC = () => {
             <TournamentBracket />
           )}
 
-          {activeTab === 'counter' && (
+          {/* Always mounted so scores & timer persist across tab changes */}
+          <div className={activeTab === 'counter' ? '' : 'hidden'}>
             <LiveGameCounter onFinishMatch={handleFinishLiveMatch} />
-          )}
+          </div>
 
           {activeTab === 'tools' && (
             <GameTools />
