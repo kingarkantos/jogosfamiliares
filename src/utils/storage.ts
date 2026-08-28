@@ -1,5 +1,5 @@
 import { AppSettings, Game, Match, Player, Tournament } from '../types';
-import { DEFAULT_SETTINGS, INITIAL_GAMES, INITIAL_MATCHES, INITIAL_PLAYERS } from './initialData';
+import { DEFAULT_SETTINGS, DEMO_MATCHES, INITIAL_GAMES, INITIAL_MATCHES, INITIAL_PLAYERS } from './initialData';
 
 const STORAGE_KEYS = {
   PLAYERS: 'jogosfamiliares_players_v1',
@@ -169,10 +169,37 @@ export function importBackupJson(file: File): Promise<boolean> {
   });
 }
 
+export function resetMatchesOnly(): void {
+  saveStoredMatches([]);
+  const games = loadStoredGames().map(g => ({ ...g, timesPlayed: 0 }));
+  saveStoredGames(games);
+  saveStoredTournaments([]);
+}
+
 export function resetAllDataToDefault(): void {
   saveStoredPlayers(INITIAL_PLAYERS);
   saveStoredGames(INITIAL_GAMES);
-  saveStoredMatches(INITIAL_MATCHES);
+  saveStoredMatches([]);
   saveStoredTournaments([]);
   saveStoredSettings(DEFAULT_SETTINGS);
 }
+
+export function resetAllDataToEmpty(): void {
+  saveStoredPlayers([]);
+  saveStoredGames([]);
+  saveStoredMatches([]);
+  saveStoredTournaments([]);
+  saveStoredSettings(DEFAULT_SETTINGS);
+}
+
+export function loadDemoData(): void {
+  saveStoredPlayers(INITIAL_PLAYERS);
+  const demoGames = INITIAL_GAMES.map(g => {
+    const played = DEMO_MATCHES.filter(m => m.gameId === g.id).length;
+    return { ...g, timesPlayed: played };
+  });
+  saveStoredGames(demoGames);
+  saveStoredMatches(DEMO_MATCHES);
+  saveStoredTournaments([]);
+}
+

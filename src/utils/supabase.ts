@@ -256,3 +256,41 @@ export async function upsertSettingsSupabase(settings: AppSettings): Promise<boo
     return false;
   }
 }
+
+
+export async function clearAllMatchesSupabase(): Promise<boolean> {
+  try {
+    const { error } = await supabase.from(SUPABASE_TABLES.MATCHES).delete().neq('id', '___non_existent___');
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function clearAllTournamentsSupabase(): Promise<boolean> {
+  try {
+    const { error } = await supabase.from(SUPABASE_TABLES.TOURNAMENTS).delete().neq('id', '___non_existent___');
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function clearAllPlayersSupabase(): Promise<boolean> {
+  try {
+    const { error } = await supabase.from(SUPABASE_TABLES.PLAYERS).delete().neq('id', '___non_existent___');
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function clearAllGamesSupabase(): Promise<boolean> {
+  try {
+    const { error } = await supabase.from(SUPABASE_TABLES.GAMES).delete().neq('id', '___non_existent___');
+    return !error;
+  } catch {
+    return false;
+  }
+}
+

@@ -152,7 +152,7 @@ export const INITIAL_GAMES: Game[] = [
     complexity: 'Médio',
     scoringType: 'highest',
     description: 'Colonize a ilha de Catan negociando recursos, construindo estradas, aldeias e cidades.',
-    timesPlayed: 14
+    timesPlayed: 0
   },
   {
     id: 'game-dixit',
@@ -165,7 +165,7 @@ export const INITIAL_GAMES: Game[] = [
     complexity: 'Fácil',
     scoringType: 'highest',
     description: 'Um jogo poético de adivinhação com cartas surreais e ilustrações mágicas.',
-    timesPlayed: 11
+    timesPlayed: 0
   },
   {
     id: 'game-carcassonne',
@@ -178,7 +178,7 @@ export const INITIAL_GAMES: Game[] = [
     complexity: 'Médio',
     scoringType: 'highest',
     description: 'Construa cidades medievais, estradas, mosteiros e campos colocando peças estratégicas.',
-    timesPlayed: 9
+    timesPlayed: 0
   },
   {
     id: 'game-ticket',
@@ -191,7 +191,7 @@ export const INITIAL_GAMES: Game[] = [
     complexity: 'Médio',
     scoringType: 'highest',
     description: 'Conecte cidades famosas dos trilhos ferroviários completando seus bilhetes de destino.',
-    timesPlayed: 8
+    timesPlayed: 0
   },
   {
     id: 'game-coup',
@@ -204,7 +204,7 @@ export const INITIAL_GAMES: Game[] = [
     complexity: 'Fácil',
     scoringType: 'elimination',
     description: 'Blefe, influencie e elimine os oponentes para ser o único sobrevivente no governo.',
-    timesPlayed: 16
+    timesPlayed: 0
   },
   {
     id: 'game-dobble',
@@ -217,7 +217,7 @@ export const INITIAL_GAMES: Game[] = [
     complexity: 'Festa',
     scoringType: 'highest',
     description: 'Encontre o único símbolo comum entre duas cartas antes de todo mundo.',
-    timesPlayed: 12
+    timesPlayed: 0
   },
   {
     id: 'game-uno',
@@ -230,7 +230,7 @@ export const INITIAL_GAMES: Game[] = [
     complexity: 'Fácil',
     scoringType: 'elimination',
     description: 'A versão mais cruel e divertida do clássico UNO com penalidades extremas!',
-    timesPlayed: 18
+    timesPlayed: 0
   },
   {
     id: 'game-exploding',
@@ -243,12 +243,16 @@ export const INITIAL_GAMES: Game[] = [
     complexity: 'Festa',
     scoringType: 'elimination',
     description: 'Evite explodir com os gatinhos explosivos usando desarmes, ataques e pulos de turno.',
-    timesPlayed: 10
+    timesPlayed: 0
   }
 ];
 
-export const INITIAL_MATCHES: Match[] = [
-  // Quinta-feira recente (Semana atual)
+// Initial state is clean (no matches yet)
+export const INITIAL_MATCHES: Match[] = [];
+
+// Sample demo matches for preview / demonstration purposes
+export const DEMO_MATCHES: Match[] = [
+  // Quinta-feira recente
   {
     id: 'match-1',
     date: '2026-08-20T20:00:00.000Z',
@@ -281,7 +285,6 @@ export const INITIAL_MATCHES: Match[] = [
       { playerId: 'player-6', rank: 6, rawScore: 0, leaguePointsEarned: 1 }
     ]
   },
-  // Quinta-feira anterior
   {
     id: 'match-3',
     date: '2026-08-13T20:00:00.000Z',
@@ -312,7 +315,6 @@ export const INITIAL_MATCHES: Match[] = [
       { playerId: 'player-3', rank: 4, rawScore: 65, leaguePointsEarned: 3 }
     ]
   },
-  // Quinta-feira começo de Agosto
   {
     id: 'match-5',
     date: '2026-08-06T20:00:00.000Z',

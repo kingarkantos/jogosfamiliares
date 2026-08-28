@@ -12,7 +12,9 @@ import {
   Sparkles,
   Check,
   Cloud,
-  RefreshCw
+  RefreshCw,
+  Trash2,
+  Dice5
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { exportBackupJson, importBackupJson } from '../utils/storage';
@@ -27,7 +29,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const {
     settings,
     updateSettings,
+    resetMatches,
     resetAllData,
+    resetToCleanSlate,
+    loadDemoSampleData,
     reloadFromStorage,
     isCloudConnected,
     isCloudSyncing,
@@ -57,10 +62,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   };
 
-  const handleReset = () => {
-    if (window.confirm('ATENÇÃO: Deseja redefinir os dados para os valores padrão de exemplo da família? Todos os dados customizados serão reiniciados.')) {
-      resetAllData();
-      alert('Dados redefinidos com sucesso!');
+  const handleResetMatches = async () => {
+    if (window.confirm('Deseja zerar todas as partidas e pontuações? Os jogadores e catálogo de jogos serão mantidos intactos, mas todos os pontos e histórico de partidas serão zerados.')) {
+      await resetMatches();
+      alert('Todas as partidas e pontuações foram zeradas com sucesso!');
+      onClose();
+    }
+  };
+
+  const handleResetToDefault = async () => {
+    if (window.confirm('Deseja redefinir para o estado padrão limpo? Serão restaurados os jogadores e jogos padrão da família, com 0 partidas registradas.')) {
+      await resetAllData();
+      alert('Dados redefinidos com sucesso para o padrão limpo!');
+      onClose();
+    }
+  };
+
+  const handleCleanSlate = async () => {
+    if (window.confirm('ATENÇÃO: Deseja apagar TUDO (todos os jogadores, jogos, partidas e torneios)? Você começará o app 100% do zero.')) {
+      await resetToCleanSlate();
+      alert('Todos os dados foram apagados com sucesso!');
+      onClose();
+    }
+  };
+
+  const handleLoadDemo = async () => {
+    if (window.confirm('Deseja carregar partidas de demonstração simuladas para teste?')) {
+      await loadDemoSampleData();
+      alert('Partidas de demonstração carregadas com sucesso!');
       onClose();
     }
   };
@@ -271,16 +300,85 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
-          {/* Reset to Default */}
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={handleReset}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-bold transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Restaurar Dados Padrão de Exemplo
-            </button>
+          {/* Reset Options */}
+          <div className="p-5 rounded-3xl bg-red-950/20 border border-red-500/20 space-y-3">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-red-400" />
+              <h4 className="font-bold text-sm text-red-300">Opções de Limpeza e Reset</h4>
+            </div>
+            <p className="text-xs text-slate-400">
+              Escolha abaixo como deseja resetar os dados do sistema:
+            </p>
+
+            <div className="space-y-2 pt-1">
+              {/* Option 1: Reset only matches and rankings */}
+              <button
+                type="button"
+                onClick={handleResetMatches}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 hover:bg-red-500/10 text-slate-200 hover:text-red-300 border border-white/5 hover:border-red-500/30 text-xs font-bold transition-all text-left group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-red-500/20 text-red-400 group-hover:bg-red-500/30">
+                    <Trash2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-white font-bold">Zerar Apenas Partidas & Pontuações</div>
+                    <div className="text-[11px] text-slate-400 font-normal">Mantém jogadores e jogos cadastrados, mas zera rankings e histórico de partidas.</div>
+                  </div>
+                </div>
+              </button>
+
+              {/* Option 2: Reset to default clean state */}
+              <button
+                type="button"
+                onClick={handleResetToDefault}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 hover:bg-brand-500/10 text-slate-200 hover:text-brand-300 border border-white/5 hover:border-brand-500/30 text-xs font-bold transition-all text-left group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-brand-500/20 text-brand-400 group-hover:bg-brand-500/30">
+                    <RotateCcw className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-white font-bold">Restaurar Padrão Limpo da Família</div>
+                    <div className="text-[11px] text-slate-400 font-normal">Restaura os perfis e jogos padrão da família com 0 partidas registradas.</div>
+                  </div>
+                </div>
+              </button>
+
+              {/* Option 3: Clean slate 100% */}
+              <button
+                type="button"
+                onClick={handleCleanSlate}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 hover:bg-red-500/20 text-slate-200 hover:text-red-400 border border-white/5 hover:border-red-500/30 text-xs font-bold transition-all text-left group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-red-500/10 text-red-500 group-hover:bg-red-500/20">
+                    <Trash2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-red-300 font-bold">Zerar Tudo (Começar 100% do Zero)</div>
+                    <div className="text-[11px] text-slate-400 font-normal">Apaga todos os jogadores, jogos, partidas e torneios.</div>
+                  </div>
+                </div>
+              </button>
+
+              {/* Option 4: Load Demo Sample */}
+              <button
+                type="button"
+                onClick={handleLoadDemo}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 hover:bg-amber-500/10 text-slate-200 hover:text-amber-300 border border-white/5 hover:border-amber-500/30 text-xs font-bold transition-all text-left group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 group-hover:bg-amber-500/30">
+                    <Dice5 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-white font-bold">Carregar Partidas de Demonstração (Demo)</div>
+                    <div className="text-[11px] text-slate-400 font-normal">Insere partidas simuladas de teste com pontuações e histórico.</div>
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
 
         </div>

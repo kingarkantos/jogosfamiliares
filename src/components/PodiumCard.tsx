@@ -14,19 +14,20 @@ export const PodiumCard: React.FC<PodiumCardProps> = ({
   title = 'Pódio dos Campeões',
   subtitle = 'Os 3 melhores jogadores do momento'
 }) => {
-  if (!entries || entries.length === 0) {
+  const activeEntries = (entries || []).filter(e => e.totalPoints > 0 || e.matchesPlayed > 0);
+  if (!activeEntries || activeEntries.length === 0) {
     return (
       <div className="glass-panel p-8 rounded-3xl text-center text-slate-400">
         <Trophy className="w-12 h-12 mx-auto text-slate-600 mb-2" />
-        <p className="font-semibold">Nenhum jogador pontuou ainda neste período.</p>
-        <p className="text-xs text-slate-500 mt-1">Jogue uma partida para inaugurar o pódio!</p>
+        <p className="font-semibold text-white">Nenhum jogador pontuou ainda neste período.</p>
+        <p className="text-xs text-slate-400 mt-1">Registre a primeira partida da rodada para inaugurar o pódio da temporada!</p>
       </div>
     );
   }
 
-  const first = entries[0];
-  const second = entries.length > 1 ? entries[1] : null;
-  const third = entries.length > 2 ? entries[2] : null;
+  const first = activeEntries[0];
+  const second = activeEntries.length > 1 ? activeEntries[1] : null;
+  const third = activeEntries.length > 2 ? activeEntries[2] : null;
 
   return (
     <div className="glass-panel p-6 sm:p-8 rounded-3xl relative overflow-hidden">

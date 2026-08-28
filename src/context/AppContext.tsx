@@ -2,12 +2,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { AppSettings, Game, Match, MatchPlayerResult, Player, PlayerStats, Tournament } from '../types';
 import {
+  loadDemoData,
   loadStoredGames,
   loadStoredMatches,
   loadStoredPlayers,
   loadStoredSettings,
   loadStoredTournaments,
   resetAllDataToDefault,
+  resetAllDataToEmpty,
+  resetMatchesOnly,
   saveStoredGames,
   saveStoredMatches,
   saveStoredPlayers,
@@ -15,6 +18,10 @@ import {
   saveStoredTournaments
 } from '../utils/storage';
 import {
+  clearAllGamesSupabase,
+  clearAllMatchesSupabase,
+  clearAllPlayersSupabase,
+  clearAllTournamentsSupabase,
   deleteGameSupabase,
   deleteMatchSupabase,
   deletePlayerSupabase,
@@ -74,9 +81,12 @@ interface AppContextType {
   addTournament: (tournament: Tournament) => void;
   updateTournament: (tournament: Tournament) => void;
   deleteTournament: (tournamentId: string) => void;
-  // Settings Actions
+  // Settings & Reset Actions
   updateSettings: (newSettings: Partial<AppSettings>) => void;
-  resetAllData: () => void;
+  resetMatches: () => Promise<void>;
+  resetAllData: () => Promise<void>;
+  resetToCleanSlate: () => Promise<void>;
+  loadDemoSampleData: () => Promise<void>;
   reloadFromStorage: () => void;
   // Analytics & Ranking helpers
   getPlayerStats: (playerId: string) => PlayerStats;
@@ -385,11 +395,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     sounds.playClick();
   };
 
-  const resetAllData = () => {
+  const resetMatches = async () => {
+    resetMatchesOnly();
+    setMatches([]);
+    setTournaments([]);
+    const resetGames = games.map(g => ({ ...g, timesPlayed: 0 }));
+    setGames(resetGames);
+    saveStoredGames(resetGames);
+    try {
+      await clearAllMatchesSupabase();
+      await clearAllTournamentsSupabase();
+      for (const g of resetGames) await upsertGameSupabase(g);
+    } catch (e) {
+      console.warn('Supabase reset matches error:', e);
+    }
+    sounds.playSuccess();
+  };
+
+  const resetAllData = async () => {
     resetAllDataToDefault();
     reloadFromStorage();
-    syncWithCloud();
+    try {
+      await clearAllMatchesSupabase();
+      await clearAllTournamentsSupabase();
+      const stPlayers = loadStoredPlayers();
+      const stGames = loadStoredGames();
+      for (const p of stPlayers) await upsertPlayerSupabase(p);
+      for (const g of stGames) await upsertGameSupabase(g);
+      await upsertSettingsSupabase(settings);
+    } catch (e) {
+      console.warn('Supabase reset all error:', e);
+    }
     sounds.playSuccess();
+  };
+
+  const resetToCleanSlate = async () => {
+    resetAllDataToEmpty();
+    setPlayers([]);
+    setGames([]);
+    setMatches([]);
+    setTournaments([]);
+    try {
+      await clearAllMatchesSupabase();
+      await clearAllTournamentsSupabase();
+      await clearAllPlayersSupabase();
+      await clearAllGamesSupabase();
+    } catch (e) {
+      console.warn('Supabase clear all error:', e);
+    }
+    sounds.playSuccess();
+  };
+
+  const loadDemoSampleData = async () => {
+    loadDemoData();
+    reloadFromStorage();
+    sounds.playSuccess();
+    triggerConfetti();
   };
 
   // Analytics & Stats
@@ -593,7 +654,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateTournament,
         deleteTournament,
         updateSettings,
+        resetMatches,
         resetAllData,
+        resetToCleanSlate,
+        loadDemoSampleData,
         reloadFromStorage,
         getPlayerStats,
         getLeaderboard,
