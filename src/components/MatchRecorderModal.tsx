@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Trophy,
@@ -41,25 +41,39 @@ export const MatchRecorderModal: React.FC<MatchRecorderModalProps> = ({
   const [isWeeklyCupMatch, setIsWeeklyCupMatch] = useState(true);
   const [notes, setNotes] = useState('');
 
-  // Selected player order (ordered from 1st place to last place)
-  const [rankedPlayerIds, setRankedPlayerIds] = useState<string[]>(() => {
-    if (initialPlayerScores && initialPlayerScores.length > 0) {
-      return [...initialPlayerScores]
-        .sort((a, b) => b.score - a.score)
-        .map(p => p.playerId);
-    }
-    return players.slice(0, 4).map(p => p.id);
-  });
+  // Player ranking order (1st to last)
+  const [rankedPlayerIds, setRankedPlayerIds] = useState<string[]>([]);
+  const [rawScores, setRawScores] = useState<{ [playerId: string]: number }>({});
 
-  const [rawScores, setRawScores] = useState<{ [playerId: string]: number }>(() => {
-    const scores: { [playerId: string]: number } = {};
-    if (initialPlayerScores) {
-      initialPlayerScores.forEach(p => {
-        scores[p.playerId] = p.score;
-      });
+  // Reinitialize state whenever the modal opens so prefilled scores from
+  // the live counter (or any caller) are always applied fresh.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Fresh timestamp on each open
+    setDate(new Date().toISOString().slice(0, 16));
+    setNotes('');
+
+    if (initialGameId) {
+      setSelectedGameId(initialGameId);
+    } else if (games.length > 0) {
+      setSelectedGameId(games[0].id);
     }
-    return scores;
-  });
+
+    if (initialPlayerScores && initialPlayerScores.length > 0) {
+      // Sort highest score → lowest so 1st place is at top
+      const sorted = [...initialPlayerScores].sort((a, b) => b.score - a.score);
+      setRankedPlayerIds(sorted.map(p => p.playerId));
+      const scores: { [playerId: string]: number } = {};
+      sorted.forEach(p => { scores[p.playerId] = p.score; });
+      setRawScores(scores);
+    } else {
+      // Default: first 4 players, no raw scores
+      setRankedPlayerIds(players.slice(0, 4).map(p => p.id));
+      setRawScores({});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
